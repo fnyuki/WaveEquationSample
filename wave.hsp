@@ -1,0 +1,109 @@
+#include "d3m.hsp"
+
+screen 0, 800, 600
+
+#define N 50           //Œn‚Ì’·‚³
+#define c 4.0           //”g‚Ì‘¬“x
+#define dt 0.1          //ŠÔ‚Ì‚İ•
+#define dd 1.0          //Œn‚Ì‚İ•
+
+ddim z, 3, N, N
+
+*init
+	
+	screen 2, 200, 200
+	title ""
+	cls 2
+	
+	screen 0
+	title "”g“®•û’ö®‰ğÍƒvƒƒOƒ‰ƒ€"
+	
+	phi = double(M_PI/3*5)
+	theta = double(M_PI/3*5)
+	r = 200.0
+		
+	//int t,i,j,tmax
+	t = 2
+	tmax = 200
+	
+	/*”g‚Ì‰ŠúğŒ‚ÌŒˆ’è*/
+	for i, 0, N, 1
+		for j, 0, N, 1
+			z(0, i, j) = 0.0 //z[0][i][j] = 0.0
+		next
+	next
+	
+	/*‰Šúó‘Ô‚©‚çŸ‚Ìó‘Ô‚ğŒvZ‚·‚é*/
+	for i, 1, N-1, 1
+		for j, 1, N-1, 1
+			z(1, i, j) = z(0, i, j) + c*c/2.0*dt*dt/(dd*dd)*(z(0, i+1, j)+z(0, i-1, j)+z(0, i, j+1)+z(0, i, j-1)-4.0*z(0, i, j))
+		next
+	next
+	for i, 0, N, 1
+		z(1, i, 0) = 0.0
+		z(1, i, N-1) = 0.0
+		z(1, 0, i) = 0.0
+		z(1, N-1, i) = 0.0
+	next
+
+*main
+	
+	gsel 2
+	stick key, 512, 0
+	if key&256 : gosub *clicked
+	if key&512 : gosub *rotate
+	old_mousex = ginfo_mx
+	old_mousey = ginfo_my
+	gsel 0
+	
+	d3setcam int(r*sin(phi)*cos(theta)), int(r*sin(phi)*sin(theta)), int(r*cos(phi)) - 20, 0, 0, -20, 1.0
+	
+	if t < tmax {
+		
+		for i, 1, N-1, 1
+			for j, 1, N-1, 1
+				z(2, i, j) = 2.0*z(1, i, j)-z(0, i, j)+c*c*dt*dt/(dd*dd)*(z(1, i+1, j)+z(1, i-1, j)+z(1,i,j+1)+z(1,i,j-1)-4.0*z(1,i,j))
+			next
+		next
+		for i, 0, N, 1
+			z(2, i, 0) = 0.0
+			z(2, i, N-1) = 0.0
+			z(2, 0, i) = 0.0
+			z(2, N-1, i) = 0.0
+		next
+		redraw 0
+		color : boxf
+		/*Ÿ‚ÌŒvZ‚Ì‚½‚ß‚É”z—ñ‚Ì”’l‚ğ“ü‚ê‚©‚¦‚éB‚±‚±‚Å‰ß‹‚Ìî•ñ‚Í¸‚í‚ê‚éB*/
+		for i, 0, N-1, 1
+			for j, 0, N-1, 1
+				z(0,i,j) = z(1,i,j)
+				z(1,i,j) = z(2,i,j)
+				hsvcolor 96 - z(2, i,j), 255, 255
+				d3line i*4 - 100, j*4 - 100, z(2,i,j), i*4 - 100, (j+1)*4 - 100 , z(2,i,j+1)
+				d3line i*4 - 100, j*4 - 100, z(2,i,j), (i+1)*4 - 100, j*4 - 100 , z(2,i+1,j)
+			next
+		next
+		redraw 1
+	} else {
+		stop
+	}
+	await 1
+	goto *main
+	
+*clicked
+	if ginfo_act != 2 : return
+	/*”g‚Ì‰ŠúğŒ‚ÌŒˆ’è*/
+	for i, 0, N, 1
+		for j, 0, N, 1
+			if i >= mousex/4 && i <= mousex/4 && j >= mousey/4 && j <= mousey/4{
+				z(0, i, j) = 20.0 //z[0][i][j] = 5.0
+			}
+		next
+	next
+	return
+
+*rotate
+	if ginfo_act != 2 : return
+	phi -= double(ginfo_my - old_mousey)/200.0
+	theta -= double(ginfo_mx - old_mousex)/200.0
+	return
